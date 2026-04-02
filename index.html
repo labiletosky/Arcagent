@@ -397,6 +397,7 @@
           <div class="wallet-badge" id="walletBadge">
             <div class="dot"></div>
             <span id="walletAddr">Connected</span>
+            <button onclick="disconnectWallet()" style="background:transparent;border:1px solid rgba(168,240,192,0.3);color:#a8f0c0;padding:3px 8px;font-family:IBM Plex Mono,monospace;font-size:10px;cursor:pointer;letter-spacing:1px;margin-left:4px;">Disconnect</button>
           </div>
           <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
         </div>
@@ -615,6 +616,18 @@
       } catch(e) {
         showStatus("lookupStatus", "Order not found.", "error");
       }
+    }
+
+    function disconnectWallet() {
+      provider = null;
+      signer = null;
+      userAddress = null;
+      document.getElementById("walletBadge").style.display = "none";
+      document.getElementById("connectBtn").style.display = "block";
+      document.getElementById("ordersList").innerHTML = "<div class='empty-state'>Connect wallet to view orders</div>";
+      document.getElementById("statOrders").textContent = "—";
+      document.getElementById("statPending").textContent = "—";
+      document.getElementById("statExecuted").textContent = "—";
     }
 
     function showStatus(id, msg, type) {
