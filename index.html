@@ -29,7 +29,7 @@
       font-family: 'IBM Plex Mono', monospace;
       min-height: 100vh;
       padding: 40px 20px;
-      background-image: 
+      background-image:
         radial-gradient(circle at 10% 20%, rgba(212,160,23,0.06) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(26,58,42,0.05) 0%, transparent 40%);
     }
@@ -115,6 +115,7 @@
       padding: 10px 16px;
       font-size: 11px;
       letter-spacing: 1px;
+      flex-wrap: wrap;
     }
 
     .dot {
@@ -147,28 +148,6 @@
       border: 1.5px solid var(--border);
       padding: 24px;
       position: relative;
-    }
-
-    .card-full {
-      grid-column: 1 / -1;
-    }
-
-    .card-label {
-      font-size: 9px;
-      letter-spacing: 3px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-label::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
     }
 
     .field {
@@ -243,7 +222,8 @@
       font-size: 11px;
       letter-spacing: 0.5px;
       margin-top: 12px;
-      word-break: break-all;
+      word-break: break-word;
+      white-space: pre-wrap;
       line-height: 1.6;
     }
 
@@ -382,6 +362,21 @@
     }
 
     footer a { color: var(--accent); text-decoration: none; }
+
+    .mobile-help-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent2);
+      color: #fff;
+      border: none;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      text-transform: uppercase;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -393,13 +388,14 @@
           <h1>Arc<span>Agent</span></h1>
           <div class="tagline">// autonomous on-chain commerce protocol</div>
         </div>
-        <div>
+        <div style="min-width: 260px;">
           <div class="wallet-badge" id="walletBadge">
             <div class="dot"></div>
             <span id="walletAddr">Connected</span>
             <button onclick="disconnectWallet()" style="background:transparent;border:1px solid rgba(168,240,192,0.3);color:#a8f0c0;padding:3px 8px;font-family:IBM Plex Mono,monospace;font-size:10px;cursor:pointer;letter-spacing:1px;margin-left:4px;">Disconnect</button>
           </div>
           <button class="connect-btn" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+          <div id="mobileWalletHelp"></div>
         </div>
       </div>
     </header>
@@ -420,9 +416,10 @@
     </div>
 
     <div class="grid">
-      <!-- Place Order -->
       <div class="card">
-        <div class="card-label">Place Order</div>
+        <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+          <span>Place Order</span><span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+        </div>
         <div class="field">
           <label>Item Name</label>
           <input type="text" id="itemName" placeholder="e.g. Coffee, API Call..."/>
@@ -435,9 +432,10 @@
         <div class="status" id="placeStatus"></div>
       </div>
 
-      <!-- Execute Order -->
       <div class="card">
-        <div class="card-label">Execute Order</div>
+        <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+          <span>Execute Order</span><span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+        </div>
         <div class="field">
           <label>Order ID</label>
           <input type="number" id="execOrderId" placeholder="e.g. 1"/>
@@ -451,9 +449,10 @@
         <div class="status" id="execStatus"></div>
       </div>
 
-      <!-- Order Lookup -->
       <div class="card">
-        <div class="card-label">Lookup Order</div>
+        <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+          <span>Lookup Order</span><span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+        </div>
         <div class="field">
           <label>Order ID</label>
           <input type="number" id="lookupId" placeholder="e.g. 1"/>
@@ -462,11 +461,12 @@
         <div class="status" id="lookupStatus"></div>
       </div>
 
-      <!-- Recent Orders -->
       <div class="card">
-        <div class="card-label">Recent Orders</div>
+        <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+          <span>Recent Orders</span><span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+        </div>
         <div class="orders-list" id="ordersList">
-          <div class="empty-state">Connect wallet to view orders</div>
+          <div class="empty-state">Loading recent orders...</div>
         </div>
       </div>
     </div>
@@ -481,6 +481,7 @@
     const AGENT_ADDR = "0x880A0e6c1eD42E1B1C3ce70f51aE6d0314911c52";
     const TOKEN_ADDR = "0x7888Da753f5D964987931741C8ca2044F6c1c463";
     const ARC_CHAIN_ID = "0x4CEB52";
+    const ARC_RPC_URL = "https://rpc.testnet.arc.network";
 
     const AGENT_ABI = [
       "function placeOrder(string memory item, uint256 amount) returns (uint256)",
@@ -494,126 +495,279 @@
       "function balanceOf(address) view returns (uint256)"
     ];
 
-    let provider, signer, userAddress;
+    let provider = null;
+    let signer = null;
+    let userAddress = null;
+    let discoveredProvider = null;
+
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    window.addEventListener("eip6963:announceProvider", (event) => {
+      const detail = event.detail;
+      if (!discoveredProvider && detail && detail.provider) {
+        discoveredProvider = detail.provider;
+      }
+    });
+
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+    function getEthereumProvider() {
+      if (discoveredProvider) return discoveredProvider;
+
+      if (window.ethereum && Array.isArray(window.ethereum.providers) && window.ethereum.providers.length) {
+        const metaMaskProvider = window.ethereum.providers.find((p) => p.isMetaMask);
+        if (metaMaskProvider) return metaMaskProvider;
+        return window.ethereum.providers[0];
+      }
+
+      if (window.ethereum) return window.ethereum;
+
+      return null;
+    }
+
+    function getReadProvider() {
+      return provider || new ethers.JsonRpcProvider(ARC_RPC_URL);
+    }
+
+    function openInMetaMask() {
+      const cleanUrl = window.location.href.replace(/^https?:\/\//, "");
+      window.location.href = `https://metamask.app.link/dapp/${cleanUrl}`;
+    }
+
+    function showWalletHelp() {
+      const helpBox = document.getElementById("mobileWalletHelp");
+      helpBox.innerHTML = "";
+
+      if (isMobile) {
+        const btn = document.createElement("button");
+        btn.className = "mobile-help-btn";
+        btn.textContent = "Open in MetaMask";
+        btn.onclick = openInMetaMask;
+        helpBox.appendChild(btn);
+        showStatus("placeStatus", "No wallet detected in this browser. Open this page in MetaMask mobile browser.", "error");
+      } else {
+        showStatus("placeStatus", "No wallet found. Install MetaMask or use a wallet-enabled browser.", "error");
+      }
+    }
+
+    async function ensureArcNetwork(eth) {
+      try {
+        await eth.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: ARC_CHAIN_ID }]
+        });
+      } catch (e) {
+        if (e.code === 4902) {
+          await eth.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: ARC_CHAIN_ID,
+              chainName: "Arc Testnet",
+              rpcUrls: [ARC_RPC_URL],
+              nativeCurrency: {
+                name: "USDC",
+                symbol: "USDC",
+                decimals: 18
+              },
+              blockExplorerUrls: ["https://testnet.arcscan.app"]
+            }]
+          });
+        } else {
+          throw e;
+        }
+      }
+    }
 
     async function connectWallet() {
-      if (!window.ethereum) return showStatus("placeStatus", "No wallet found.", "error");
+      const eth = getEthereumProvider();
+
+      if (!eth) {
+        showWalletHelp();
+        return;
+      }
+
       try {
-        provider = new ethers.BrowserProvider(window.ethereum);
+        provider = new ethers.BrowserProvider(eth);
         await provider.send("eth_requestAccounts", []);
-        try {
-          await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_ID }] });
-        } catch(e) {
-          if (e.code === 4902) {
-            await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{ chainId: ARC_CHAIN_ID, chainName: "Arc Testnet", rpcUrls: ["https://rpc.testnet.arc.network"], nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, blockExplorerUrls: ["https://testnet.arcscan.app"] }] });
-          }
-        }
+        await ensureArcNetwork(eth);
+
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+
         document.getElementById("walletBadge").style.display = "flex";
-        document.getElementById("walletAddr").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+        document.getElementById("walletAddr").textContent = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
         document.getElementById("connectBtn").style.display = "none";
+        document.getElementById("mobileWalletHelp").innerHTML = "";
+
+        showStatus("placeStatus", "Wallet connected successfully.", "success");
         await loadStats();
         await loadRecentOrders();
-      } catch(e) {
-        showStatus("placeStatus", "Connection failed: " + e.message, "error");
+      } catch (e) {
+        showStatus("placeStatus", "Connection failed: " + (e.reason || e.message), "error");
       }
     }
 
     async function loadStats() {
       try {
-        const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, provider);
-        const count = await agent.orderCount();
-        const total = Number(count);
-        let pending = 0, executed = 0;
-        for (let i = 1; i <= Math.min(total, 20); i++) {
+        const readProvider = getReadProvider();
+        const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, readProvider);
+        const total = Number(await agent.orderCount());
+
+        let pending = 0;
+        let executed = 0;
+        const start = Math.max(1, total - 19);
+
+        for (let i = start; i <= total; i++) {
           const o = await agent.getOrder(i);
-          o.executed ? executed++ : pending++;
+          if (o.executed) executed++;
+          else pending++;
         }
+
         document.getElementById("statOrders").textContent = total;
         document.getElementById("statPending").textContent = pending;
         document.getElementById("statExecuted").textContent = executed;
-      } catch(e) {}
+      } catch (e) {
+        console.error("loadStats error:", e);
+      }
     }
 
     async function loadRecentOrders() {
       try {
-        const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, provider);
+        const readProvider = getReadProvider();
+        const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, readProvider);
         const count = Number(await agent.orderCount());
         const list = document.getElementById("ordersList");
-        if (count === 0) { list.innerHTML = '<div class="empty-state">No orders yet. Place one above.</div>'; return; }
+
+        if (count === 0) {
+          list.innerHTML = '<div class="empty-state">No orders yet. Place one above.</div>';
+          return;
+        }
+
         list.innerHTML = "";
         const start = Math.max(1, count - 4);
+
         for (let i = count; i >= start; i--) {
           const o = await agent.getOrder(i);
           const amt = parseFloat(ethers.formatUnits(o.amount, 18)).toFixed(2);
+
           list.innerHTML += `
             <div class="order-item">
-              <div class="order-id">#${o.id}</div>
+              <div class="order-id">#${Number(o.id)}</div>
               <div class="order-details">
                 <div class="order-item-name">${o.item}</div>
                 <div class="order-meta">${amt} ART · ${o.buyer.slice(0,6)}...${o.buyer.slice(-4)}</div>
               </div>
               <div class="order-status ${o.executed ? 'executed' : 'pending'}">${o.executed ? 'Done' : 'Pending'}</div>
-            </div>`;
+            </div>
+          `;
         }
-      } catch(e) {}
+      } catch (e) {
+        console.error("loadRecentOrders error:", e);
+        document.getElementById("ordersList").innerHTML = '<div class="empty-state">Could not load orders.</div>';
+      }
     }
 
     async function placeOrder() {
       const item = document.getElementById("itemName").value.trim();
       const amt = document.getElementById("orderAmount").value;
-      if (!item || !amt) return showStatus("placeStatus", "Fill in all fields.", "error");
+
+      if (!signer) {
+        showStatus("placeStatus", "Connect wallet first.", "error");
+        return;
+      }
+
+      if (!item || !amt) {
+        showStatus("placeStatus", "Fill in all fields.", "error");
+        return;
+      }
+
       document.getElementById("placeBtn").disabled = true;
       showStatus("placeStatus", "Approving tokens...", "loading");
+
       try {
-        const amount = ethers.parseUnits(String(Math.floor(parseFloat(amt))), 18);
+        const parsed = parseFloat(amt);
+
+        if (isNaN(parsed) || parsed <= 0) {
+          throw new Error("Enter a valid amount.");
+        }
+
+        const amount = ethers.parseUnits(String(Math.floor(parsed)), 18);
+
         const token = new ethers.Contract(TOKEN_ADDR, TOKEN_ABI, signer);
         const approveTx = await token.approve(AGENT_ADDR, amount);
         await approveTx.wait();
+
         showStatus("placeStatus", "Placing order...", "loading");
+
         const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, signer);
         const tx = await agent.placeOrder(item, amount);
-        const receipt = await tx.wait();
+        await tx.wait();
+
         showStatus("placeStatus", "✓ Order placed! Tx: " + tx.hash, "success");
         document.getElementById("itemName").value = "";
         document.getElementById("orderAmount").value = "";
+
         await loadStats();
         await loadRecentOrders();
-      } catch(e) {
+      } catch (e) {
         showStatus("placeStatus", "Failed: " + (e.reason || e.message), "error");
       }
+
       document.getElementById("placeBtn").disabled = false;
     }
 
     async function executeOrder() {
       const id = document.getElementById("execOrderId").value;
-      if (!id) return showStatus("execStatus", "Enter an order ID.", "error");
+
+      if (!signer) {
+        showStatus("execStatus", "Connect wallet first.", "error");
+        return;
+      }
+
+      if (!id) {
+        showStatus("execStatus", "Enter an order ID.", "error");
+        return;
+      }
+
       document.getElementById("execBtn").disabled = true;
       showStatus("execStatus", "Agent executing order...", "loading");
+
       try {
         const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, signer);
         const tx = await agent.executeOrder(Number(id));
         await tx.wait();
+
         showStatus("execStatus", "✓ Order executed! Tx: " + tx.hash, "success");
         await loadStats();
         await loadRecentOrders();
-      } catch(e) {
+      } catch (e) {
         showStatus("execStatus", "Failed: " + (e.reason || e.message), "error");
       }
+
       document.getElementById("execBtn").disabled = false;
     }
 
     async function lookupOrder() {
       const id = document.getElementById("lookupId").value;
-      if (!id) return showStatus("lookupStatus", "Enter an order ID.", "error");
+
+      if (!id) {
+        showStatus("lookupStatus", "Enter an order ID.", "error");
+        return;
+      }
+
       try {
-        const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, provider);
+        const readProvider = getReadProvider();
+        const agent = new ethers.Contract(AGENT_ADDR, AGENT_ABI, readProvider);
         const o = await agent.getOrder(Number(id));
         const amt = parseFloat(ethers.formatUnits(o.amount, 18)).toFixed(4);
         const date = new Date(Number(o.timestamp) * 1000).toLocaleString();
-        showStatus("lookupStatus", `ID: #${o.id}\nItem: ${o.item}\nBuyer: ${o.buyer}\nAmount: ${amt} ART\nStatus: ${o.executed ? "✓ Executed" : "⏳ Pending"}\nTime: ${date}`, "success");
-      } catch(e) {
+
+        showStatus(
+          "lookupStatus",
+          `ID: #${Number(o.id)}\nItem: ${o.item}\nBuyer: ${o.buyer}\nAmount: ${amt} ART\nStatus: ${o.executed ? "✓ Executed" : "⏳ Pending"}\nTime: ${date}`,
+          "success"
+        );
+      } catch (e) {
         showStatus("lookupStatus", "Order not found.", "error");
       }
     }
@@ -622,12 +776,14 @@
       provider = null;
       signer = null;
       userAddress = null;
+
       document.getElementById("walletBadge").style.display = "none";
       document.getElementById("connectBtn").style.display = "block";
       document.getElementById("ordersList").innerHTML = "<div class='empty-state'>Connect wallet to view orders</div>";
       document.getElementById("statOrders").textContent = "—";
       document.getElementById("statPending").textContent = "—";
       document.getElementById("statExecuted").textContent = "—";
+      document.getElementById("mobileWalletHelp").innerHTML = "";
     }
 
     function showStatus(id, msg, type) {
@@ -636,6 +792,11 @@
       el.className = "status " + type;
       el.style.display = "block";
     }
+
+    window.addEventListener("load", async () => {
+      await loadStats();
+      await loadRecentOrders();
+    });
   </script>
 </body>
 </html>
