@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ArcAgent — Agentic Commerce on Arc</title>
+  <link rel="icon" type="image/png" href="arcagent-logo.png">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Clash+Display:wght@400;600;700&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <style>
@@ -71,6 +72,22 @@
       color: var(--muted);
       margin-top: 10px;
       letter-spacing: 1px;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand-logo {
+      width: 76px;
+      height: 76px;
+      object-fit: cover;
+      border-radius: 18px;
+      border: 1px solid rgba(212,160,23,0.15);
+      background: #111008;
     }
 
     .header-row {
@@ -141,6 +158,7 @@
     @media (max-width: 520px) {
       .grid { grid-template-columns: 1fr; }
       h1 { font-size: 36px; }
+      .brand-logo { width: 62px; height: 62px; }
     }
 
     .card {
@@ -383,10 +401,13 @@
   <div class="container">
     <header>
       <div class="header-row">
-        <div>
-          <div class="eyebrow">Arc Testnet // Agentic Commerce</div>
-          <h1>Arc<span>Agent</span></h1>
-          <div class="tagline">// autonomous on-chain commerce protocol</div>
+        <div class="brand-wrap">
+          <img src="arcagent-logo.png" alt="ArcAgent Logo" class="brand-logo">
+          <div>
+            <div class="eyebrow">Arc Testnet // Agentic Commerce</div>
+            <h1>Arc<span>Agent</span></h1>
+            <div class="tagline">// autonomous on-chain commerce protocol</div>
+          </div>
         </div>
         <div style="min-width: 260px;">
           <div class="wallet-badge" id="walletBadge">
@@ -800,4 +821,3 @@
   </script>
 </body>
 </html>
-::contentReference[oaicite:0]{index=0}
