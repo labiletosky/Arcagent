@@ -19,7 +19,6 @@
       --muted: #8a846e;
       --success: #1a7a3a;
       --error: #c0392b;
-      --tag: #e8e2d4;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -110,6 +109,7 @@
       cursor: pointer;
       transition: all 0.2s;
       text-transform: uppercase;
+      width: 100%;
     }
 
     .connect-btn:hover {
@@ -181,7 +181,7 @@
       margin-bottom: 6px;
     }
 
-    .field input, .field textarea {
+    .field input {
       width: 100%;
       background: var(--bg);
       border: 1.5px solid var(--border);
@@ -191,10 +191,9 @@
       color: var(--text);
       outline: none;
       transition: border-color 0.2s;
-      resize: none;
     }
 
-    .field input:focus, .field textarea:focus {
+    .field input:focus {
       border-color: var(--accent);
     }
 
@@ -522,6 +521,7 @@
     let discoveredProvider = null;
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isMetaMaskInApp = /MetaMaskMobile/i.test(navigator.userAgent);
 
     window.addEventListener("eip6963:announceProvider", (event) => {
       const detail = event.detail;
@@ -559,13 +559,13 @@
       const helpBox = document.getElementById("mobileWalletHelp");
       helpBox.innerHTML = "";
 
-      if (isMobile) {
+      if (isMobile && !isMetaMaskInApp) {
         const btn = document.createElement("button");
         btn.className = "mobile-help-btn";
         btn.textContent = "Open in MetaMask";
         btn.onclick = openInMetaMask;
         helpBox.appendChild(btn);
-        showStatus("placeStatus", "No wallet detected in this browser. Open this page in MetaMask mobile browser.", "error");
+        showStatus("placeStatus", "Open this page in MetaMask mobile browser to connect your wallet.", "error");
       } else {
         showStatus("placeStatus", "No wallet found. Install MetaMask or use a wallet-enabled browser.", "error");
       }
